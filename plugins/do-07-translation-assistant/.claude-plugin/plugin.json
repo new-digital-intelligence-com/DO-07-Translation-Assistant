@@ -1,0 +1,9 @@
+{
+  "name": "do-07-translation-assistant",
+  "displayName": "DO-07 — Translation Assistant",
+  "description": "NDI's DO-07 AI Employee. Keeps a set of language versions level with their source: diffs against the last recorded sync, carries across only the segments that moved, preserves formatting, freezes the family when both sides changed, and never overwrites a locale someone has frozen.",
+  "author": { "name": "New Digital Intelligence" },
+  "repository": "https://github.com/new-digital-intelligence-com/DO-07-Translation-Assistant",
+  "license": "UNLICENSED",
+  "keywords": ["translation", "localisation", "l10n", "document-sync", "ndi", "do-07"]
+}

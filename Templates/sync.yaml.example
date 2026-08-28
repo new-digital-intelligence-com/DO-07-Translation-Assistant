@@ -1,0 +1,23 @@
+# Family rule for the NovaLink warranty policy.
+# DO-07 reads this rather than inferring the locale set from the folder.
+
+family: novalink-warranty
+source_language: en
+source_file: Warranty_Policy_EN.docx
+
+locales:
+  - code: de
+    file: Warranty_Policy_DE.docx
+    reviewer: legal-de@aurelian-networks.example
+  - code: fr
+    file: Warranty_Policy_FR.docx
+    reviewer: legal-fr@aurelian-networks.example
+  - code: nl
+    file: Warranty_Policy_NL.docx
+    reviewer: legal-nl@aurelian-networks.example
+
+# Triggers the review-draft path: locales are written as drafts and routed to
+# their reviewer, never marked level without a human.
+tags: [warranty, legal]
+
+glossary: glossary.csv

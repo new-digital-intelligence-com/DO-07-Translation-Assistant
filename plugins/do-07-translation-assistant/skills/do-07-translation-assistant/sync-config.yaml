@@ -1,0 +1,127 @@
+# DO-07 pack config — first testable version.
+#
+# Two deliberate reductions from the role spec, both recorded here rather than
+# quietly dropped:
+#
+# 1. NO TRANSLATION MEMORY. The spec assumes a TMS bridge (custom-mcp over
+#    Phrase or memoQ) for segment reuse and for writing new pairs back. No such
+#    connector exists in the tenant. Without it there is no cross-time reuse and
+#    no "the old term stops resurfacing" behaviour. The glossary is a file in the
+#    family folder instead, which enforces terms *within* a run but remembers
+#    nothing between runs beyond what the index records.
+#
+# 2. IT DOES NOT WATCH. The spec's first workflow watches folders for changes.
+#    A skill cannot watch; it runs when invoked or when a scheduled task fires.
+#    So change detection is by comparison against the recorded source state, not
+#    by event. A change made and reverted between two runs is invisible.
+#
+# Both are the honest v0.1 shape. Neither is a defect to fix in the skill body.
+
+variants:
+  kind: locale
+  source_language: en
+  set_from: family rule in the family's sync.yaml, never inferred from the folder
+
+source_of_truth:
+  rule: the document in the family folder whose locale equals source_language
+  fingerprint: sha256 of the file bytes, first 16 hex chars (scripts/sync_index.py hash)
+
+granularity:
+  unit: segment
+  definition: >-
+    a paragraph, list item, table cell, or heading — the smallest block that can be
+    replaced without disturbing the ones around it
+
+index:
+  local_dir: index                     # store directory, one file per family
+  store: "By AI Employee/DO-07 Translation Assistant/index"
+  note: >-
+    One file per family rather than one appended file, because the Drive connector
+    can create a file but not update one. New families and new records only ever
+    need creates.
+
+review:
+  legally_significant_tags: [contract, regulatory, safety, warranty, terms]
+  rule: >-
+    a family carrying any of these tags produces review drafts, never synced variants,
+    and each locale is routed to its named reviewer before it counts as level
+
+pack_values:
+  PACK_VARIANT_SET: |-
+    **Language versions of one document.** A *family* is one source document plus its
+    configured target locales — for example an English master with DE, FR, NL and JA
+    versions beside it.
+
+    The target set comes from the family's own rule, which lives in `sync.yaml` in the
+    family folder. Never infer the set from which files happen to be present: a locale
+    that was deliberately retired looks exactly like one nobody has created yet, and
+    guessing wrong either resurrects a dead locale or silently drops a live one.
+
+  PACK_SOURCE_RULE: |-
+    The document whose locale matches the family's `source_language` — English unless the
+    family says otherwise.
+
+    Its fingerprint is the sha256 of its bytes, first 16 hex characters:
+
+    ```bash
+    python3 scripts/sync_index.py --path index hash <source file>
+    ```
+
+    That fingerprint is what the index records and what the next run compares against. It
+    is deliberately whole-file: a fingerprint that ignored formatting would call a
+    layout-only change "no change", and this employee is responsible for layout too.
+
+  PACK_SYNC_DEFINITION: |-
+    A variant is **in sync** when the index records it as synced from the source's current
+    fingerprint. Anything else is behind, and being behind always has a stated reason:
+    the source moved, the variant was edited locally, the family is in conflict, or the
+    locale is frozen.
+
+    In sync means *carrying the same meaning*, not *word-for-word identical* — and it
+    includes formatting. A variant whose text is correct but whose table broke under text
+    expansion is not in sync.
+
+  PACK_CONFLICT_RULE: |-
+    freeze the whole family, report both sides with what changed in each, and escalate to
+    the family owner.
+
+  PACK_INDEX_STORE: |-
+    Store: Google Drive, "By AI Employee/DO-07 Translation Assistant/index"
+
+    **Stage it:** load the Google Drive tools, list that folder, and download every
+    `.jsonl` into a local directory named `index`. If the folder is missing or empty,
+    create the local directory anyway and say the run is proceeding without history —
+    every family will then read as a first sync, which is a materially different run and
+    the user needs to know they are getting it.
+
+    **Persist it:** upload the file named in the script's `upload_this_file` output to
+    that same folder. One file per family, so a run touching one family uploads exactly
+    one file and overwrites nothing. If a file of that name already exists, download it
+    first, let the script append locally, then upload the merged file under a suffixed
+    name (`warranty-b.jsonl`) rather than trashing the original. Reads span every file in
+    the folder, so suffixed names cost nothing.
+
+  PACK_FIDELITY_RULE: |-
+    text expansion breaking a table or a fixed-width layout, a segment whose meaning
+    depends on English word order, an untranslatable product or legal term, or a
+    formatting construct the target format cannot carry. `references/segment-fidelity.md`
+    lists what to look for and what to say about each.
+
+  PACK_APPLY_METHOD: |-
+    Write each target-locale document by **replacing only the changed segments in the
+    existing variant**, leaving every other segment byte-identical. Read the `docx` skill
+    before touching a Word document — assigning to a paragraph's text collapses it to a
+    single unstyled run and destroys the formatting this employee exists to preserve.
+
+    For a first sync, where no variant exists yet, create it from the source and say
+    plainly that the whole document was translated rather than a set of segments carried
+    across.
+
+    Enforce the family glossary as you go: every term it defines takes the defined
+    translation, and any term you could not apply is reported rather than silently
+    substituted.
+
+    **Legally significant families produce review drafts, not synced variants.** If the
+    family carries a `contract`, `regulatory`, `safety`, `warranty` or `terms` tag, each
+    locale is written as a draft, routed to its named reviewer, and recorded as
+    pending-review. It is not level until a human says so.

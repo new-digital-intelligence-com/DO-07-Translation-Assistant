@@ -1,0 +1,18 @@
+{
+  "name": "ndi-ai-employees",
+  "owner": {
+    "name": "New Digital Intelligence",
+    "url": "https://new-digital-intelligence.com"
+  },
+  "description": "NDI's AI Employee plugins for Claude Code and Cowork.",
+  "plugins": [
+    {
+      "name": "do-07-translation-assistant",
+      "source": "./plugins/do-07-translation-assistant",
+      "displayName": "DO-07 — Translation Assistant",
+      "description": "Keeps every language version of a document saying the same thing. Detects what changed in the source, carries only the changed segments into each target locale, preserves the formatting, and records what was synced.",
+      "category": "productivity",
+      "keywords": ["translation", "localisation", "l10n", "document-sync", "ndi"]
+    }
+  ]
+}
